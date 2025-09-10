@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "curl-mcp-server": {
+      "command": "node",
+      "args": ["C:\\claude\\curl-mcp-server\\index.js"],
+      "env": {}
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\claude"],
+      "env": {}
+    }
+  }
+}
