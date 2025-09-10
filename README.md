@@ -54,26 +54,14 @@ Add this to your Claude Desktop configuration file (usually located at `%APPDATA
   "mcpServers": {
     "curl-mcp-server": {
       "command": "node",
-      "args": ["C:\\claude\\curl-mcp-server\\index_v2.js"],
-      "env": {}
-    }
-  }
-}
-```
-
-### Legacy Configuration (v1.0.0)
-
-```json
-{
-  "mcpServers": {
-    "curl-mcp-server": {
-      "command": "node",
       "args": ["C:\\claude\\curl-mcp-server\\index.js"],
       "env": {}
     }
   }
 }
 ```
+
+
 
 ## Usage Examples
 
