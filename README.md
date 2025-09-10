@@ -1,6 +1,6 @@
-# Curl MCP Server v1.1.0
+# Curl MCP Server v1.2.0
 
-A Model Context Protocol (MCP) server that provides curl functionality for making HTTP requests and downloading files, with built-in response size limiting to prevent excessive output.
+A Model Context Protocol (MCP) server that provides curl functionality for making HTTP requests and downloading files, optimized for GPT model compatibility with clean, simple JSON responses.
 
 ## Features
 
@@ -20,7 +20,16 @@ A Model Context Protocol (MCP) server that provides curl functionality for makin
   - Redirect following
   - Progress tracking
 
-## New in v1.1.0
+## New in v1.2.0
+
+### Optimized for GPT Models
+- Simplified response format by default - returns just the data without metadata wrappers
+- Automatic JSON parsing when response is valid JSON
+- Clean, minimal error messages
+- Better handling of large JSON arrays and objects
+- Direct data passthrough for easier processing by AI models
+
+## Features from v1.1.0
 
 ### Response Size Limiting
 - Added `max_response_size` parameter (default: 800KB)
@@ -45,7 +54,7 @@ npm install
 
 ## Configuration
 
-### Claude Desktop Configuration (v1.1.0)
+### Claude Desktop Configuration (v1.2.0)
 
 Add this to your Claude Desktop configuration file (usually located at `%APPDATA%\Claude\claude_desktop_config.json`):
 
@@ -74,6 +83,18 @@ Add this to your Claude Desktop configuration file (usually located at `%APPDATA
   }
 }
 ```
+
+### Response Format (v1.2.0)
+All responses now return clean JSON or text data directly, making it easier for GPT models to process:
+```json
+{
+  "tool": "curl_request",
+  "args": {
+    "url": "https://fapi.binance.com/fapi/v1/exchangeInfo"
+  }
+}
+```
+Returns the actual API response directly without metadata wrappers.
 
 ### Large Response with Size Limiting
 ```json
@@ -141,18 +162,24 @@ The server now automatically limits response sizes to prevent overwhelming the s
   - `truncation_note`: Human-readable truncation message
   - `warning`: Advice about using the max_response_size parameter
 
-### Example Truncated Response
+### Example Response (v1.2.0)
+For JSON APIs, returns the parsed JSON directly:
 ```json
 {
-  "success": true,
-  "command": "curl --max-time 30 ...",
-  "response": "[truncated response content]",
-  "error": null,
-  "truncated": true,
-  "original_size": 2500000,
-  "truncated_size": 800000,
-  "truncation_note": "Response truncated from 2500000 bytes to 800000 bytes",
-  "warning": "Large response was truncated. Use max_response_size parameter to control truncation."
+  "result": [...],  // Direct API response
+  "timestamp": "2024-01-01T00:00:00Z"
+}
+```
+
+For text responses, returns the raw text:
+```
+Plain text response from the server
+```
+
+For errors, returns a simple error object:
+```json
+{
+  "error": "Connection timeout"
 }
 ```
 
@@ -192,6 +219,7 @@ The server now automatically limits response sizes to prevent overwhelming the s
 
 ## Version History
 
+- **v1.2.0**: Optimized for GPT models - simplified response format by default, automatic JSON parsing, cleaner output
 - **v1.1.0**: Added response size limiting, better error handling, increased buffer size
 - **v1.0.0**: Initial release with basic curl functionality
 

@@ -16,7 +16,7 @@ class CurlMCPServer {
     this.server = new Server(
       {
         name: "curl-mcp-server",
-        version: "1.1.0",
+        version: "1.2.0",
       },
       {
         capabilities: {
@@ -205,57 +205,58 @@ class CurlMCPServer {
         truncated = true;
       }
       
-      const result = {
-        success: true,
-        command: command,
-        response: response,
-        error: stderr || null
-      };
-      
-      if (truncated) {
-        result.truncated = true;
-        result.original_size = originalSize;
-        result.truncated_size = max_response_size;
-        result.truncation_note = `Response truncated from ${originalSize} bytes to ${max_response_size} bytes`;
-        result.warning = "Large response was truncated. Use max_response_size parameter to control truncation.";
+      // Try to parse response as JSON if possible (for better GPT compatibility)
+      let parsedResponse = null;
+      let isJson = false;
+      try {
+        parsedResponse = JSON.parse(response);
+        isJson = true;
+      } catch {
+        // Not JSON, keep as string
+        parsedResponse = response;
       }
       
-      // Ensure the final JSON doesn't exceed reasonable limits
-      const resultJson = JSON.stringify(result, null, 2);
-      if (resultJson.length > 1000000) { // 1MB safety check
+      // Always use simple format for better GPT compatibility
+      // Return just the parsed response directly if it's JSON
+      if (isJson) {
+        // Check if response is too large
+        const jsonString = JSON.stringify(parsedResponse, null, 2);
+        if (jsonString.length > 1000000) {
+          // For oversized JSON, truncate intelligently
+          if (Array.isArray(parsedResponse)) {
+            parsedResponse = parsedResponse.slice(0, 100); // First 100 items
+          } else if (typeof parsedResponse === 'object') {
+            parsedResponse = Object.fromEntries(Object.entries(parsedResponse).slice(0, 100)); // First 100 keys
+          }
+        }
+        
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify({
-                success: true,
-                truncated: true,
-                original_size: originalSize,
-                error: "Response too large even after truncation",
-                sample: response.substring(0, 50000),
-                note: "Only showing first 50KB of response due to size constraints"
-              }, null, 2)
+              text: JSON.stringify(parsedResponse, null, 2)
+            }
+          ]
+        };
+      } else {
+        // Return raw text response
+        return {
+          content: [
+            {
+              type: "text",
+              text: response
             }
           ]
         };
       }
-      
-      return {
-        content: [
-          {
-            type: "text",
-            text: resultJson
-          }
-        ]
-      };
 
     } catch (error) {
+      // Simplified error format
       return {
         content: [
           {
             type: "text",
             text: JSON.stringify({
-              success: false,
               error: error.message,
               stderr: error.stderr || null
             }, null, 2)
@@ -307,10 +308,8 @@ class CurlMCPServer {
             type: "text",
             text: JSON.stringify({
               success: true,
-              command: command,
               output_path: output_path,
-              message: "File downloaded successfully",
-              stderr: stderr || null
+              message: "File downloaded successfully"
             }, null, 2)
           }
         ]
@@ -322,9 +321,7 @@ class CurlMCPServer {
           {
             type: "text",
             text: JSON.stringify({
-              success: false,
-              error: error.message,
-              stderr: error.stderr || null
+              error: error.message
             }, null, 2)
           }
         ],
@@ -336,7 +333,7 @@ class CurlMCPServer {
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error("Curl MCP server v1.1.0 running on stdio with response size limiting");
+    console.error("Curl MCP server v1.2.0 running on stdio with improved GPT compatibility");
   }
 }
 
